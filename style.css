@@ -1,0 +1,181 @@
+body{
+    margin: 0;
+}
+*{
+    box-sizing: border-box;
+}
+.menu-container{
+    height: 80px;
+    background-color: lightblue;
+}
+.formula-container{
+    height: 30px;
+    background-color: rgb(151, 169, 175);
+}
+
+.sheets{
+    height: 40px;
+    background-color:lightgrey;
+    display: flex;
+}
+.add-sheet-container{
+    height: 100%;
+    min-width: 30px;
+    border: 1px solid gray;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+.icon{
+    font-size: 1.5rem;
+    color: yellowgreen;
+}
+.sheets-list{
+    display: flex;
+    height: 100%;
+    overflow-x: auto;
+}
+
+.sheet{
+    min-width: 60px;
+    height: 100%;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+.active-sheet{
+    background-color: white;
+}
+
+/* *************8 */
+/* grid container css*/
+.top-left-box {
+    height: 30px;
+    width: 25px;
+    background-color: gray;
+}
+
+.top-row {
+    height: 30px;
+    background-color: lightgreen;
+    display: flex;
+    position: absolute;
+    top: 0px;
+    left: 25px
+}
+.row {
+    display: flex;
+}
+
+.col-head {
+    min-width: 80px;
+    max-width: 80px;
+    border: 1px solid;
+    min-height: 30px;
+    text-align: center;
+}
+.col {
+    min-width: 80px;
+    max-width: 80px;
+    border: 1px solid;
+    min-height: 30px;
+}
+
+.left-col {
+    width: 25px;
+}
+.left-col-box {
+    height: 30px;
+    background-color: lightgreen;
+    text-align: center;
+    border: 1px solid;
+}
+
+.grid {
+    position: absolute;
+    top: 30px;
+    left: 25px; 
+}
+.grid-container {
+    height: calc(100vh - ( 80px + 30px + 40px) ); /* remaining height given to grid*/
+    overflow: auto;
+    position: relative;
+}
+
+
+
+
+/* ****************** */
+/* menu-container styling starts from here */
+.menu-container{
+    background-color: lightblue;
+    height:80px;
+    display:flex;
+    align-items:center;
+}
+/* Future */
+.menu-container > *{ /* for all children of class menu-container*/
+    height: 80%;
+    width:20%;
+    border-right:2px solid;
+}
+.formatting-container{
+    display:flex;
+    justify-content: space-around;
+}
+/* input and select are inline-block elements so we have to give height and width to them . */
+.subgroup{
+    display:flex;
+    flex-direction: column;
+    justify-content: space-evenly;
+    width:45%;
+    height:100%;
+}
+.subgroup>*{
+    width: 100%;
+}
+.BIU_container{
+    display: flex;
+    justify-content: space-between;
+}
+.BUI_container>*{
+    width: 30%;
+}
+.active-btn{
+    background-color: rgb(100, 98, 98);
+}
+.color-container{
+    display: flex;
+    justify-content: space-between;
+}
+.color-container>*{ /* to all children of color-container*/
+    width: 45%;
+}
+.alignment-container{
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+.alignment-container>*{
+    width:20%;
+}
+
+
+/* ******************* */
+/* formula-container styling starts from here */
+.formula-container{
+    background-color: rgb(151, 169, 175);
+    height: 30px;
+    display: flex;
+    align-items: center;
+    justify-content: space-evenly;
+}
+.address-box{
+    width: 10%;
+}
+.separator{
+    width: 2%;
+}
+.formula-box{
+    width: 80%;
+}
