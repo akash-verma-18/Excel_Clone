@@ -13,6 +13,7 @@ let boldElem = document.querySelector(".bold");
 let italicElem = document.querySelector(".italic");
 let underlineElem = document.querySelector(".underline");
 let allAlignBtns = document.querySelectorAll(".alignment-container>*")
+let formulaInput = document.querySelector(".formula-box");
 let sheetDB = workSheetDB[0]; // it will store the database of first sheet
 
 addbtnContainer.addEventListener("click", function(){
@@ -45,7 +46,7 @@ addbtnContainer.addEventListener("click", function(){
 
 });
 function handleActiveSheet(e){ // to display which sheet is active and open.
-    let mySheet = e.currentTarget;
+    let mySheet = e.currentTarget; // on which eventListener is added
     let sheetsArr = document.querySelectorAll(".sheet");
     sheetsArr.forEach(function (sheet){
         sheet.classList.remove("active-sheet");
@@ -54,13 +55,14 @@ function handleActiveSheet(e){ // to display which sheet is active and open.
         mySheet.classList.add("active-sheet");
     }
     //  index
-    let sheetIdx = mySheet.getAttribute("sheetIdx")
-        ;
+    let sheetIdx = mySheet.getAttribute("sheetIdx");
     sheetDB = workSheetDB[sheetIdx - 1];
     // get data from that and set ui
     setUI(sheetDB);
 }
+
 // *****************************************************
+
 //  address set on click of a cell 
 
 for(let i=0; i<allCells.length; i++){
@@ -110,12 +112,29 @@ for(let i=0; i<allCells.length; i++){
         } else if (cellObject.halign == "center") {
             centerBtn.classList.add("active-btn")
         }
+        if (cellObject.formula != "") { // formula check
+            formulaInput.value = cellObject.formula;
+        } else {
+            formulaInput.value = "";
+        }
     });
 }
 // initial cell click emulate
 allCells[0].click(); // By default first cell will be clicked.
+// looping for all cells for adding eventlistener to each cell.
+for(let i = 0; i < allCells.length; i++) {
+    allCells[i].addEventListener("blur", function handleCell() { // The blur event fires when an element has lost focus.
+        let address = addressBar.value;
+        let { rid, cid } = getRIdCIdfromAddress(address);
+        let cellObject = sheetDB[rid][cid];
+        let cell = document.querySelector(`.col[rid="${rid}"][cid="${cid}"]`);
+        cellObject.value = cell.innerText;
+    });
+}
+/* ********************************************************* */
 
 // ************Formatting****************
+
 leftBtn.addEventListener("click", function () {
     let address = addressBar.value;
     let { rid, cid } = getRIdCIdfromAddress(address);
@@ -225,17 +244,8 @@ underlineElem.addEventListener("click", function(){
 })
 // ****************************************************************
 
+// addSheet helper functions
 
-// Helper functions
-function getRIdCIdfromAddress(adress) { // This function will return rowid and columnid of the cell.
-    // A1
-    let cellColAdr = adress.charCodeAt(0); // it will give us ASCII code of character.
-    // console.log(cellColAdr);
-    let cellrowAdr = adress.slice(1); // slice also works on string. 
-    let cid = cellColAdr - 65; // 65 is the ASCII code of 'A'.
-    let rid = Number(cellrowAdr) - 1;
-    return { cid, rid }; // returning object
-}
 function initUI() { // it will set the default values to new sheet.
     for (let i = 0; i < allCells.length; i++) {
         // boldness
@@ -248,23 +258,137 @@ function initUI() { // it will set the default values to new sheet.
         allCells[i].innerText = "";
     }
 }
-for(let i = 0; i < allCells.length; i++) {
-    allCells[i].addEventListener("blur", function handleCell() {
-        let address = addressBar.value;
-        let { rid, cid } = getRIdCIdfromAddress(address);
-        let cellObject = sheetDB[rid][cid];
-        let cell = document.querySelector(`.col[rid="${rid}"][cid="${cid}"]`);
-        cellObject.value = cell.innerText;
-    });
-}
-function setUI(sheetDB) {
+
+
+
+function setUI(sheetDB) { // it will reflect the changes made by the user on UI. 
     for (let i = 0; i < sheetDB.length; i++) {
         for (let j = 0; j < sheetDB[i].length; j++) {
             let cell = document.querySelector(`.col[rid="${i}"][cid="${j}"]`);
             let { bold, italic, underline, fontFamily, fontSize, halign, value } = sheetDB[i][j];
             cell.style.fontWeight = bold == true ? "bold" : "normal";
+            cell.style.fontStyle = italic == true ? "italic" : "normal";
+            cell.style.textDecoration = underline == true ? "underline" : "none";
             cell.innerText = value;
         }
     }
 }
 
+// ************************************************************************************ 
+
+/* Formula Code
+we have 4 cases:- 1.when we give value to a cell
+                  2. when we manually set formula value
+                  3. when we change formula for a cell
+                  4. when we change value of a cell on which other cells are dependent, then changes must
+                  be reflected on other cells too.
+                   */ 
+formulaInput.addEventListener("keydown", function (e){
+    if(e.key == "Enter" && formulaInput.value!=""){
+        let Newformula = formulaInput.value;
+        let address = addressBar.value; // address of resultant cell
+        // get current Cell
+        let {rid, cid} = getRIdCIdfromAddress(address);
+        let cellObject = sheetDB[rid][cid];
+        let prevFormula = cellObject.formula;
+        // if we try to change the previous formula
+        if (prevFormula == Newformula) {
+            return;
+        }
+        if (prevFormula != "" && prevFormula != Newformula) {
+            removeFormula(cellObject, address);
+        }
+        // value is evaluated based on NewFormula
+        let evaluatedValue = evaluateFormula(Newformula);
+        setUIByFormula(evaluatedValue, rid, cid); // reflect the change on UI
+        // changes in database
+        setFormula(evaluatedValue, Newformula, rid, cid, address);
+        // changes should also be reflected on it's children 
+        changeChildren(cellObject); // resultant cell object
+    }
+})
+function evaluateFormula(formula){
+    // formula input should be in this format "( A1 + A2 )"  
+    let formulaTokens = formula.split(" "); // we will get [(, A1, +, A2, )]
+    for(let i=0; i<formulaTokens.length; i++){
+        let firstCharofToken = formulaTokens[i].charCodeAt(0);
+        if(firstCharofToken >= 65 && firstCharofToken <= 90){
+            let {rid, cid} = getRIdCIdfromAddress(formulaTokens[i]);
+            let cellObject = sheetDB[rid][cid]; // getting value from database
+            let { value } = cellObject;
+            formula = formula.replace(formulaTokens[i], value); // replace A1 and A2 with actual values
+        }
+    }
+    let ans = eval(formula); // evaluate ( 10 + 20 )
+    return ans;
+}
+function setUIByFormula(value, rid, cid){
+    // after calculating the result, the resultant cell should be changed.
+    document.querySelector(`.col[rid="${rid}"][cid="${cid}"]`).innerText = value;
+}
+function setFormula(value, formula, rid, cid, address) { // changes reflected in database
+    let cellObject = sheetDB[rid][cid];
+    cellObject.value = value;
+    cellObject.formula = formula;
+    let formulaTokens = formula.split(" ");
+    for (let i = 0; i < formulaTokens.length; i++) {
+        let firstCharOfToken = formulaTokens[i].charCodeAt(0);
+        if (firstCharOfToken >= 65 && firstCharOfToken <= 90) {
+            //  getting value from  db
+            let parentRIdCid = getRIdCIdfromAddress(formulaTokens[i]);
+            let cellObject = sheetDB[parentRIdCid.rid][parentRIdCid.cid];
+            // the address we are getting is the address of that cell on which we want to see the result of operation
+            cellObject.children.push(address);
+        }
+    }
+}
+function changeChildren(cellObject) { 
+    // changes must be made on dependent cells after making changes in parent cell
+    let children = cellObject.children;
+    for (let i = 0; i < children.length; i++) {
+        let chAddress = children[i];
+        let chRICIObj = getRIdCIdfromAddress(chAddress);
+        let chObj = sheetDB[chRICIObj.rid][chRICIObj.cid];
+        let formula = chObj.formula;
+        let evaluatedValue = evaluateFormula(formula); // we have to recalculate because of changes made in parent cell
+        setUIByFormula(evaluatedValue, chRICIObj.rid, chRICIObj.cid); // changes reflected on UI
+        chObj.value = evaluatedValue;
+        // if a resultant cell has other dependent cells, then changes must be made in those cells too.
+        changeChildren(chObj); // caaling recursively
+    }
+
+}
+
+function removeFormula(cellObject, address) {
+    let formula = cellObject.formula;
+    let formulaTokens = formula.split(" ");
+    for (let i = 0; i < formulaTokens.length; i++) {
+        let firstCharOfToken = formulaTokens[i].charCodeAt(0);
+        if (firstCharOfToken >= 65 && firstCharOfToken <= 90) {
+            //  getting value from  db
+            let parentRIdCid = getRIdCIdfromAddress(formulaTokens[i]);
+            let parentCellObject = sheetDB[parentRIdCid.rid][parentRIdCid.cid];
+            // when we manually enter data in resultant cell, it is no longer a dependent cell
+            // So we are removing dependent cells from parent's children array
+            let children = parentCellObject.children;
+            let idx = children.indexOf(address);
+            children.splice(idx, 1);
+        }
+    }
+    cellObject.formula = "";
+
+}
+
+// *******************************************************************************************
+
+// Main Helper function( used by almost every function)
+
+function getRIdCIdfromAddress(adress) { // This function will return rowid and columnid of the cell.
+    // A1
+    let cellColAdr = adress.charCodeAt(0); // it will give us ASCII code of character.
+    // console.log(cellColAdr);
+    let cellrowAdr = adress.slice(1); // slice also works on string. 
+    let cid = cellColAdr - 65; // 65 is the ASCII code of 'A'.
+    let rid = Number(cellrowAdr) - 1;
+    return { cid, rid }; // returning object
+}

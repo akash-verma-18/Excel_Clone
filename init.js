@@ -38,7 +38,9 @@ grid.innerHTML = str;
                 fontFamily: "Arial",
                 fontSize: "10",
                 halign: "left",
-                value:"" // this will store all the data entered in a sheet
+                value:"", // this will store all the data entered in a sheet
+                formula:"", // formula entered in the formula bar
+                children:[] // the cells which are dependent on a cell(parent cell)
             }
             row.push(cell);
         }
