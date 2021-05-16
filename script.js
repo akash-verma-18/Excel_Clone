@@ -14,6 +14,8 @@ let italicElem = document.querySelector(".italic");
 let underlineElem = document.querySelector(".underline");
 let allAlignBtns = document.querySelectorAll(".alignment-container>*")
 let formulaInput = document.querySelector(".formula-box");
+let gridContainer = document.querySelector(".grid-container");
+let topLeftBlock = document.querySelector(".top-left-box");
 let sheetDB = workSheetDB[0]; // it will store the database of first sheet
 
 addbtnContainer.addEventListener("click", function(){
@@ -62,9 +64,9 @@ function handleActiveSheet(e){ // to display which sheet is active and open.
 }
 
 // *****************************************************
-
+// initial cell click emulate
+allCells[0].click(); // By default first cell will be clicked.dshjv
 //  address set on click of a cell 
-
 for(let i=0; i<allCells.length; i++){
     allCells[i].addEventListener("click", function handleCell(){
         let rid = Number(allCells[i].getAttribute("rid"));
@@ -118,9 +120,26 @@ for(let i=0; i<allCells.length; i++){
             formulaInput.value = "";
         }
     });
+    allCells[i].addEventListener("keydown", function (e) {
+        let obj = allCells[i].getBoundingClientRect();
+        let height = obj.height;
+        let address = addressBar.value;
+        let { rid, cid } = getRIdCIdfromAddress(address);
+        let leftCol = document.querySelectorAll(".left-col .left-col_box")[rid];
+        leftCol.style.height = height + "px";
+    });
 }
-// initial cell click emulate
-allCells[0].click(); // By default first cell will be clicked.
+gridContainer.addEventListener("scroll", function () {
+    // console.log(e);
+    let top = gridContainer.scrollTop;
+    let left = gridContainer.scrollLeft;
+    console.log(left);
+    topLeftBlock.style.top = top + "px";
+    topRow.style.top = top + "px";
+    leftCol.style.left = left + "px";
+    topLeftBlock.style.left = left + "px";
+})
+
 // looping for all cells for adding eventlistener to each cell.
 for(let i = 0; i < allCells.length; i++) {
     allCells[i].addEventListener("blur", function handleCell() { // The blur event fires when an element has lost focus.
@@ -128,7 +147,16 @@ for(let i = 0; i < allCells.length; i++) {
         let { rid, cid } = getRIdCIdfromAddress(address);
         let cellObject = sheetDB[rid][cid];
         let cell = document.querySelector(`.col[rid="${rid}"][cid="${cid}"]`);
+        if(cellObject.value == cell.innerText){ // if the value is same, there is no need to update
+            return;
+        }
+        if(cellObject.formula){
+            removeFormula(cellObject, address);
+        }
+        // db entry
         cellObject.value = cell.innerText;
+        // depend update
+        changeChildren(cellObject);
     });
 }
 /* ********************************************************* */
@@ -311,7 +339,7 @@ function evaluateFormula(formula){
     // formula input should be in this format "( A1 + A2 )"  
     let formulaTokens = formula.split(" "); // we will get [(, A1, +, A2, )]
     for(let i=0; i<formulaTokens.length; i++){
-        let firstCharofToken = formulaTokens[i].charCodeAt(0);
+        let firstCharofToken = formulaTokens[i].charCodeAt(0); // charCodeAt will give ASCII code
         if(firstCharofToken >= 65 && firstCharofToken <= 90){
             let {rid, cid} = getRIdCIdfromAddress(formulaTokens[i]);
             let cellObject = sheetDB[rid][cid]; // getting value from database
@@ -319,7 +347,7 @@ function evaluateFormula(formula){
             formula = formula.replace(formulaTokens[i], value); // replace A1 and A2 with actual values
         }
     }
-    let ans = eval(formula); // evaluate ( 10 + 20 )
+    let ans = eval(formula); // evaluate ( 10 + 20 ) inbuilt function of JavaScript
     return ans;
 }
 function setUIByFormula(value, rid, cid){
@@ -351,10 +379,10 @@ function changeChildren(cellObject) {
         let chObj = sheetDB[chRICIObj.rid][chRICIObj.cid];
         let formula = chObj.formula;
         let evaluatedValue = evaluateFormula(formula); // we have to recalculate because of changes made in parent cell
-        setUIByFormula(evaluatedValue, chRICIObj.rid, chRICIObj.cid); // changes reflected on UI
         chObj.value = evaluatedValue;
+        setUIByFormula(evaluatedValue, chRICIObj.rid, chRICIObj.cid); // changes reflected on UI
         // if a resultant cell has other dependent cells, then changes must be made in those cells too.
-        changeChildren(chObj); // caaling recursively
+        changeChildren(chObj); // calling recursively
     }
 
 }

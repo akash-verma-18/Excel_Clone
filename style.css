@@ -53,6 +53,10 @@ body{
     height: 30px;
     width: 25px;
     background-color: gray;
+    position: absolute;
+    top:0px;
+    left:0px;
+    z-index:100;
 }
 
 .top-row {
@@ -61,7 +65,8 @@ body{
     display: flex;
     position: absolute;
     top: 0px;
-    left: 25px
+    left: 25px;
+    z-index:90;
 }
 .row {
     display: flex;
@@ -83,6 +88,11 @@ body{
 
 .left-col {
     width: 25px;
+    border: 1px solid red;
+    position: absolute;
+    top:30px;
+    left:0px;
+    z-index:90;
 }
 .left-col-box {
     height: 30px;
